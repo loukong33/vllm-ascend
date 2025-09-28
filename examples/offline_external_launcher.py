@@ -125,6 +125,11 @@ def parse_args():
                         type=float,
                         default=None,
                         help="Model weight memory usage in GiB (e.g., 1.0 for 0.5B model).")
+    parser.add_argument("--sleep-mode-level",
+                        type=int,
+                        choices=[1, 2],
+                        default=1,
+                        help="Sleep mode level: 1 or 2")
 
     args = parser.parse_args()
     if args.enable_sleep_mode:
@@ -152,6 +157,7 @@ def main(
     trust_remote_code: bool = True,
     enable_sleep_mode: bool = False,
     temperature: float = 0.8,
+    sleep_mode_level: int = 1,
 ):
     os.environ["MASTER_ADDR"] = master_addr
     os.environ["MASTER_PORT"] = str(master_port)
@@ -193,7 +199,7 @@ def main(
     if enable_sleep_mode:
         if rank == 0:
             free_bytes_before_sleep, total = torch.npu.mem_get_info()
-        llm.sleep(level=1)
+        llm.sleep(level=sleep_mode_level)
         if rank == 0:
             free_bytes_after_sleep, total = torch.npu.mem_get_info()
             freed_bytes = free_bytes_after_sleep - free_bytes_before_sleep
@@ -268,6 +274,7 @@ if __name__ == "__main__":
                            args.trust_remote_code,
                            args.enable_sleep_mode,
                            args.temperature,
+                           args.sleep_mode_level,
                        ))
 
         proc.start()
